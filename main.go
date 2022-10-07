@@ -79,8 +79,12 @@ func addTracksPlayedTodayToPlaylist(ctx context.Context, trackIdClient *trackid.
 
 	log.Println("Fetching Spotify IDs for tracks, this can take a while...")
 	for i, track := range tracks {
-		trackId, _ := getSpotifyTrackIdFromAuddLink(track.SongLink)
 		index := i + 1
+		if track.SongLink == "" {
+			log.Printf("[%v/%v] Skipping track '%v - %v' as SongLink is nil", index, len(tracks), track.Artist, track.Title)
+			continue
+		}
+		trackId, _ := getSpotifyTrackIdFromAuddLink(track.SongLink)
 		if trackId != "" {
 			trackIds = append(trackIds, trackId)
 			log.Printf("[%v/%v] Retrieved Spotify ID for track '%v - %v'\n", index, len(tracks), track.Artist, track.Title)

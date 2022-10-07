@@ -39,7 +39,7 @@ func NewTrackIdClient() *TrackIdClient {
 
 func (t *TrackIdClient) GetTodaysTracks() ([]*Track, error) {
 	fmt.Println("Fetching tracks played today from Do You Track ID API...")
-	resp, err := http.Get(fmt.Sprintf("%s/archive/05/09/2022", t.BaseUrl))
+	resp, err := http.Get(fmt.Sprintf("%s/today", t.BaseUrl))
 	if err != nil {
 		panic(err)
 	}
