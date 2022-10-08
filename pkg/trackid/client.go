@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 )
 
 type TrackIdClient struct {
@@ -37,9 +38,17 @@ func NewTrackIdClient() *TrackIdClient {
 	}
 }
 
-func (t *TrackIdClient) GetTodaysTracks() ([]*Track, error) {
+func (t *TrackIdClient) GetTracks() ([]*Track, error) {
 	fmt.Println("Fetching tracks played today from Do You Track ID API...")
-	resp, err := http.Get(fmt.Sprintf("%s/today", t.BaseUrl))
+
+	endpoint := "/today"
+
+	// Hack - allows the program to run for previous dates in the event a previous execution has failed
+	if len(os.Args) > 1 {
+		endpoint = fmt.Sprintf("/archive/%v", os.Args[1])
+	}
+
+	resp, err := http.Get(fmt.Sprintf("%s%s", t.BaseUrl, endpoint))
 	if err != nil {
 		panic(err)
 	}

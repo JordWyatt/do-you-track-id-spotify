@@ -69,7 +69,7 @@ func getSpotifyClient() (context.Context, *spotify.Client) {
 
 // TODO: Refactor
 func addTracksPlayedTodayToPlaylist(ctx context.Context, trackIdClient *trackid.TrackIdClient, spotifyClient *spotify.Client, trackStore trackstore.TrackStore) error {
-	tracks, err := trackIdClient.GetTodaysTracks()
+	tracks, err := trackIdClient.GetTracks()
 
 	if err != nil {
 		return err
