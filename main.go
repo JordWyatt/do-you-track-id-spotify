@@ -20,6 +20,10 @@ import (
 	"jordwyatt.github.com/do-you-spotify/pkg/trackstore"
 )
 
+const (
+	SPOTIFY_MAX_TRACKS_ADD_PER_PLAYLIST_REQUEST = 100
+)
+
 func main() {
 	fsutils.Init()
 
@@ -98,10 +102,14 @@ func addTracksPlayedTodayToPlaylist(ctx context.Context, trackIdClient *trackid.
 	log.Println("Filtering out tracks already in playlist.")
 	trackIdsNotInPlaylist := getTrackIdsToAdd(trackIds, trackStore)
 
-	log.Printf("Adding %v tracks to playlist.\n", len(trackIdsNotInPlaylist))
-	err = addTracksToPlaylist(ctx, trackIdsNotInPlaylist, spotifyClient)
-	if err != nil {
-		return err
+	log.Printf("There are a total of %v tracks to add to playlist.\n", len(trackIdsNotInPlaylist))
+
+	for i := 0; i < len(trackIdsNotInPlaylist); i += SPOTIFY_MAX_TRACKS_ADD_PER_PLAYLIST_REQUEST {
+		tracksToAdd := paginate(trackIdsNotInPlaylist, i, SPOTIFY_MAX_TRACKS_ADD_PER_PLAYLIST_REQUEST)
+		err = addTracksToPlaylist(ctx, tracksToAdd, spotifyClient)
+		if err != nil {
+			return err
+		}
 	}
 
 	trackStore.AddTracks(trackIdsNotInPlaylist)
@@ -176,4 +184,17 @@ func getTrackIdsToAdd(trackIds []string, trackStore trackstore.TrackStore) []str
 	}
 
 	return trackIdsNotInPlaylist
+}
+
+func paginate(x []string, skip int, size int) []string {
+	if skip > len(x) {
+		skip = len(x)
+	}
+
+	end := skip + size
+	if end > len(x) {
+		end = len(x)
+	}
+
+	return x[skip:end]
 }
