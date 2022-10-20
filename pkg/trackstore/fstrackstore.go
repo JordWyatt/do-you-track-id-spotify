@@ -37,7 +37,10 @@ func NewFsTrackStore() (*FsTrackStore, error) {
 	if !trackStoreExists {
 		initialiseStoreFile()
 	} else {
-		trackStore.loadStore()
+		err := trackStore.loadStore()
+		if err != nil {
+			log.Fatalf("An error occurred while loading the track store, exiting: %v", err)
+		}
 	}
 
 	return trackStore, nil
@@ -51,7 +54,9 @@ func (s *FsTrackStore) AddTrack(trackId string) error {
 
 func (s *FsTrackStore) AddTracks(trackIds []string) error {
 	for _, trackId := range trackIds {
-		s.store[trackId] = time.Now().String()
+		if !s.HasTrack(trackId) {
+			s.store[trackId] = time.Now().String()
+		}
 	}
 	err := s.writeStore()
 	return err
@@ -73,13 +78,12 @@ func initialiseStoreFile() {
 	emptyFile.Close()
 }
 
-// TODO: Error handling
-func (s *FsTrackStore) loadStore() {
+func (s *FsTrackStore) loadStore() error {
 	file, _ := ioutil.ReadFile(getTrackStorePath())
-	_ = json.Unmarshal([]byte(file), &s.store)
+	err := json.Unmarshal([]byte(file), &s.store)
+	return err
 }
 
-// TODO: Error handling
 func (s *FsTrackStore) writeStore() error {
 	file, err := json.MarshalIndent(s.store, "", " ")
 	if err != nil {
