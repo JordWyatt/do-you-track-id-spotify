@@ -67,7 +67,7 @@ func getSpotifyClient() (context.Context, *spotify.Client) {
 	token := &oauth2.Token{}
 	_ = json.Unmarshal([]byte(file), token)
 	ctx := context.Background()
-	client := spotify.New(spotifyauth.New(spotifyauth.WithScopes(spotifyauth.ScopePlaylistModifyPrivate)).Client(ctx, token))
+	client := spotify.New(spotifyauth.New(spotifyauth.WithScopes(spotifyauth.ScopePlaylistModifyPrivate, spotifyauth.ScopePlaylistModifyPublic)).Client(ctx, token))
 	return ctx, client
 }
 
