@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 type TrackIdClient struct {
@@ -39,14 +40,19 @@ func NewTrackIdClient() *TrackIdClient {
 }
 
 func (t *TrackIdClient) GetTracks() ([]*Track, error) {
-	fmt.Println("Fetching tracks played today from Do You Track ID API...")
+	log.Println("Fetching tracks played today from Do You Track ID API...")
 
 	endpoint := "/today"
 
 	// Hack - allows the program to run for previous dates in the event a previous execution has failed
 	if len(os.Args) > 1 {
 		endpoint = fmt.Sprintf("/archive/%v", os.Args[1])
+		log.Printf("Date override provided, fetching tracks played on %s\n", os.Args[1])
+	} else {
+		log.Printf("Fetching tracks played today (%s)\n", time.Now().Format("02/01/2006"))
 	}
+
+	log.Printf("Calling %s", endpoint)
 
 	resp, err := http.Get(fmt.Sprintf("%s%s", t.BaseUrl, endpoint))
 	if err != nil {

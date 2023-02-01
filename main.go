@@ -82,6 +82,7 @@ func addTracksPlayedTodayToPlaylist(ctx context.Context, trackIdClient *trackid.
 	trackIds := []string{}
 
 	log.Println("Fetching Spotify IDs for tracks, this can take a while...")
+	// TODO: move to go routine for concurrent processing
 	for i, track := range tracks {
 		index := i + 1
 		if track.SongLink == "" {
