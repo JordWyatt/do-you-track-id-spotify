@@ -33,7 +33,7 @@ If you'd like to run this yourself, follow the instructions below.
    1. `SPOTIFY_ID=2d849f6e21b1f6d4bfee825e08f247g1f17d27`
    2. `SPOTIFY_SECRET=83fffb4d0fg94gdf86d9ef72bbeaea42`
    3. `SPOTIFY_PLAYLIST_ID=5siifffaf5fMwnd7Od34bu`
-4. To use DynamoDB as a storage layer, export:
+4. To use DynamoDB as a storage layer, export (again, made up example):
    1. `AWS_ACCESS_KEY_ID=AKIA4R4MVW6T7CFIEUFJ`
    2. `AWS_SECRET_ACCESS_KEY=6VFyP+TRSa/+XvRWF8VmyFLr5D0Ygo4FJ7s9Hfus`
 
