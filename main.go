@@ -22,6 +22,7 @@ import (
 
 const (
 	SPOTIFY_MAX_TRACKS_ADD_PER_PLAYLIST_REQUEST = 100
+	SPOTIFY_MAX_TRACKS_PER_PLAYLIST             = 10000
 )
 
 func main() {
@@ -38,13 +39,13 @@ func main() {
 		log.Println("Credentials successfully fetched!")
 	}
 
-	fsTrackStore, err := trackstore.NewFsTrackStore()
+	ddbTrackStore, err := trackstore.NewDdbTrackStore()
 	if err != nil {
 		log.Fatalf("Error initializing track store: %v", err)
 	}
 
 	log.Println("Beginning playlist update...")
-	err = updatePlaylist(fsTrackStore)
+	err = updatePlaylist(ddbTrackStore)
 	if err != nil {
 		log.Fatalf("an error occurred when updating the playlist: %v", err)
 	}
