@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"sync"
 
 	"github.com/zmb3/spotify/v2"
 	spotifyauth "github.com/zmb3/spotify/v2/auth"
@@ -80,26 +82,7 @@ func addTracksPlayedTodayToPlaylist(ctx context.Context, trackIdClient *trackid.
 		return err
 	}
 
-	trackIds := []string{}
-
-	log.Println("Fetching Spotify IDs for tracks, this can take a while...")
-	// TODO: move to go routine for concurrent processing
-	for i, track := range tracks {
-		index := i + 1
-		if track.SongLink == "" {
-			log.Printf("[%v/%v] Skipping track '%v - %v' as SongLink is nil", index, len(tracks), track.Artist, track.Title)
-			continue
-		}
-		trackId, _ := getSpotifyTrackIdFromAuddLink(track.SongLink)
-		if trackId != "" {
-			trackIds = append(trackIds, trackId)
-			log.Printf("[%v/%v] Retrieved Spotify ID for track '%v - %v'\n", index, len(tracks), track.Artist, track.Title)
-		} else {
-			log.Printf("[%v/%v] Could not retrieve Spotify ID for track '%v - %v', skipping.\n", index, len(tracks), track.Artist, track.Title)
-		}
-	}
-
-	log.Printf("Finished fetching Spotify track IDs. Out of %v tracks played, %v Spotify IDs were retrieved.\n", len(tracks), len(trackIds))
+	trackIds := getSpotifyTrackIds(tracks)
 
 	log.Println("Filtering out tracks already in playlist.")
 	trackIdsNotInPlaylist := getTrackIdsToAdd(trackIds, trackStore)
@@ -119,6 +102,53 @@ func addTracksPlayedTodayToPlaylist(ctx context.Context, trackIdClient *trackid.
 	log.Printf("Finished adding tracks to playlist")
 
 	return nil
+}
+
+func getSpotifyTrackIds(tracks []*trackid.Track) []string {
+	log.Printf("Fetching Spotify IDs for %v tracks.\n", len(tracks))
+
+	maxTrackIds := len(tracks)
+	var wg sync.WaitGroup
+
+	trackIds := make(chan string, maxTrackIds)
+
+	for i, track := range tracks {
+		wg.Add(1)
+		getSpotifyTrackId(i, track, maxTrackIds, trackIds, func() { wg.Done() })
+	}
+
+	go func() {
+		defer close(trackIds)
+		wg.Wait()
+	}()
+
+	trackIdsSlice := make([]string, 0)
+
+	for trackId := range trackIds {
+		if trackId != "" {
+			trackIdsSlice = append(trackIdsSlice, trackId)
+		}
+	}
+
+	log.Printf("Finished fetching Spotify track IDs. Out of %v tracks, %v Spotify IDs were retrieved.\n", len(tracks), len(trackIdsSlice))
+	return trackIdsSlice
+}
+
+func getSpotifyTrackId(trackIndex int, track *trackid.Track, maxTrackIds int, trackIds chan<- string, onExit func()) {
+	go func() {
+		defer onExit()
+		if track.SongLink == "" {
+			log.Printf("[%v/%v] Skipping track '%v - %v' as SongLink is nil", trackIndex, maxTrackIds, track.Artist, track.Title)
+			return
+		}
+		trackId, err := getSpotifyTrackIdFromAuddLink(track.SongLink)
+		if trackId != "" {
+			trackIds <- trackId
+			log.Printf("[%v/%v] Retrieved Spotify ID for track '%v - %v'\n", trackIndex, maxTrackIds, track.Artist, track.Title)
+		} else {
+			log.Printf("[%v/%v] Could not retrieve Spotify ID for track '%v - %v', skipping. Reason: %s\n", trackIndex, maxTrackIds, track.Artist, track.Title, err)
+		}
+	}()
 }
 
 func addTracksToPlaylist(ctx context.Context, trackIds []string, client *spotify.Client) error {
@@ -172,8 +202,7 @@ func getSpotifyTrackIdFromAuddLink(url string) (string, error) {
 		return matches[1], nil
 	}
 
-	return "", nil
-
+	return "", errors.New("could not match Spotify track regex")
 }
 
 func getTrackIdsToAdd(trackIds []string, trackStore trackstore.TrackStore) []string {
